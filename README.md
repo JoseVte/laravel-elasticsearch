@@ -67,89 +67,6 @@ ELASTICSEARCH_API_ID=
 ELASTICSEARCH_API_KEY=
 ```
 
-
-##### Connecting to AWS Elasticsearch Service
-
-If you are connecting to ElasticSearch instances on Amazon AWS, then you'll also
-need to `composer require aws/aws-sdk-php:^3.80` and add the following to your
-`.env` file:
-
-```ini
-AWS_ELASTICSEARCH_ENABLED=true
-AWS_REGION=...
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
-```
-
-If you have to use another authentication method having custom credentials (i.e. `instanceProfile()`),
-you have to publish the configuration file and use the **aws_credentials**:
-
-```php
-<?php
-// config/elasticsearch.php
-
-$provider = \Aws\Credentials\CredentialProvider::instanceProfile();
-$memoizedProvider = \Aws\Credentials\CredentialProvider::memoize($provider);
-$credentials = $memoizedProvider()->wait();
-
-...
-
-'hosts' => [
-    [
-        'host'            => env('ELASTICSEARCH_HOST', 'localhost'),
-        // For local development, the default Elasticsearch port is 9200.
-        // If you are connecting to an Elasticsearch instance on AWS, you probably want to set this to null
-        'port'            => env('ELASTICSEARCH_PORT', 9200),
-        'scheme'          => env('ELASTICSEARCH_SCHEME', null),
-        'user'            => env('ELASTICSEARCH_USER', null),
-        'pass'            => env('ELASTICSEARCH_PASS', null),
-
-        // If you are connecting to an Elasticsearch instance on AWS, you will need these values as well
-        'aws'             => env('AWS_ELASTICSEARCH_ENABLED', false),
-        'aws_region'      => env('AWS_REGION', ''),
-        'aws_key'         => env('AWS_ACCESS_KEY_ID', ''),
-        'aws_secret'      => env('AWS_SECRET_ACCESS_KEY', '')
-        'aws_credentials' => $credentials
-    ],
-],
-```
-
-If you have a job that runs in supervisor, you have to use the Closure.
-This way the credentials will be renewed at runtime.
-
-```php
-<?php
-// config/elasticsearch.php
-
-$provider = \Aws\Credentials\CredentialProvider::instanceProfile();
-$memoizedProvider = \Aws\Credentials\CredentialProvider::memoize($provider);
-
-...
-
-'hosts' => [
-    [
-        ...
-        'aws_credentials' => $memoizedProvider
-    ],
-],
-```
-
-If you are using `php artisan config:cache`, you cannot have the Closure in your config file, call it like this:
-
-```php
-<?php
-// config/elasticsearch.php
-
-...
-
-'hosts' => [
-    [
-        ...
-        'aws_credentials' => [\Aws\Credentials\CredentialProvider::class, 'defaultProvider'],
-    ],
-],
-```
-
 ### Lumen
 
 If you work with Lumen, please register the service provider and configuration in `bootstrap/app.php`:
@@ -169,7 +86,7 @@ The `Elasticsearch` facade is just an entry point into the [ES client](https://g
 so previously you might have used:
 
 ```php
-use Elasticsearch\ClientBuilder;
+use Elastic\Elasticsearch\ClientBuilder;
 
 $data = [
     'body' => [
@@ -187,7 +104,7 @@ $return = $client->index($data);
 You can now replace those last two lines with simply:
 
 ```php
-use Elasticsearch;
+use Elastic\Elasticsearch;
 
 $return = Elasticsearch::index($data);
 ```

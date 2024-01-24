@@ -1,15 +1,13 @@
-<?php 
+<?php
 
 namespace MailerLite\LaravelElasticsearch\Tests;
 
 use MailerLite\LaravelElasticsearch\Facade;
-use MailerLite\LaravelElasticsearch\ServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
+use MailerLite\LaravelElasticsearch\ServiceProvider;
 
 /**
- * Class TestCase
- *
- * @package Tests
+ * Class TestCase.
  */
 abstract class TestCase extends Orchestra
 {

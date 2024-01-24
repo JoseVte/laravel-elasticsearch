@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace MailerLite\LaravelElasticsearch\Console\Command;
 
-use Elasticsearch\Client;
-use Illuminate\Console\Command;
 use Throwable;
+use Illuminate\Console\Command;
+use Elastic\Elasticsearch\Client;
 
 final class IndexDeleteCommand extends Command
 {
@@ -33,11 +33,11 @@ final class IndexDeleteCommand extends Command
     {
         $indexName = $this->argument('index-name');
 
-        if (!$this->argumentIsValid($indexName)) {
+        if (! $this->argumentIsValid($indexName)) {
             return self::FAILURE;
         }
 
-        if (!$this->client->indices()->exists([
+        if (! $this->client->indices()->exists([
             'index' => $indexName,
         ])) {
             $this->output->writeln(
@@ -79,7 +79,7 @@ final class IndexDeleteCommand extends Command
     private function argumentIsValid($indexName): bool
     {
         if ($indexName === null ||
-            !is_string($indexName) ||
+            ! is_string($indexName) ||
             mb_strlen($indexName) === 0
         ) {
             $this->output->writeln(

@@ -2,28 +2,28 @@
 
 namespace MailerLite\LaravelElasticsearch;
 
-use Elasticsearch\Client;
-use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Arr;
+use InvalidArgumentException;
+use Elastic\Elasticsearch\Client;
+use Illuminate\Contracts\Container\Container;
+use Elastic\Elasticsearch\Exception\AuthenticationException;
 
 /**
- * Class Manager
- *
- * @package MailerLite\LaravelElasticsearch
+ * Class Manager.
  */
 class Manager
 {
     /**
      * The application instance.
      *
-     * @var \Illuminate\Contracts\Container\Container
+     * @var Container
      */
     protected $app;
 
     /**
      * The Elasticsearch connection factory instance.
      *
-     * @var \MailerLite\LaravelElasticsearch\Factory
+     * @var Factory
      */
     protected $factory;
 
@@ -35,8 +35,8 @@ class Manager
     protected $connections = [];
 
     /**
-     * @param \Illuminate\Contracts\Container\Container $app
-     * @param \MailerLite\LaravelElasticsearch\Factory $factory
+     * @param Container $app
+     * @param Factory   $factory
      */
     public function __construct(Container $app, Factory $factory)
     {
@@ -49,13 +49,15 @@ class Manager
      *
      * @param string|null $name
      *
-     * @return \Elasticsearch\Client
+     * @throws AuthenticationException
+     *
+     * @return Client
      */
     public function connection(string $name = null): Client
     {
         $name = $name ?: $this->getDefaultConnection();
 
-        if (!isset($this->connections[$name])) {
+        if (! isset($this->connections[$name])) {
             $client = $this->makeConnection($name);
 
             $this->connections[$name] = $client;
@@ -89,7 +91,9 @@ class Manager
      *
      * @param string $name
      *
-     * @return \Elasticsearch\Client
+     * @throws AuthenticationException
+     *
+     * @return Client
      */
     protected function makeConnection(string $name): Client
     {
@@ -101,24 +105,23 @@ class Manager
     /**
      * Get the configuration for a named connection.
      *
-     * @param $name
+     * @param string $name
      *
      * @return mixed
-     * @throws \InvalidArgumentException
      */
     protected function getConfig(string $name)
     {
         $connections = $this->app['config']['elasticsearch.connections'];
 
         if (null === $config = Arr::get($connections, $name)) {
-            throw new \InvalidArgumentException("Elasticsearch connection [$name] not configured.");
+            throw new InvalidArgumentException("Elasticsearch connection [$name] not configured.");
         }
 
         return $config;
     }
 
     /**
-     * Return all of the created connections.
+     * Return all the created connections.
      *
      * @return array
      */
@@ -130,8 +133,10 @@ class Manager
     /**
      * Dynamically pass methods to the default connection.
      *
-     * @param  string $method
-     * @param  array $parameters
+     * @param string $method
+     * @param array  $parameters
+     *
+     * @throws AuthenticationException
      *
      * @return mixed
      */

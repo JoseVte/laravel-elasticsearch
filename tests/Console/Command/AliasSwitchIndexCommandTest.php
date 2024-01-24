@@ -4,33 +4,30 @@ declare(strict_types=1);
 
 namespace MailerLite\LaravelElasticsearch\Tests\Console\Command;
 
-use MailerLite\LaravelElasticsearch\Tests\TestCase;
-use Elasticsearch\Client;
-use Elasticsearch\Namespaces\IndicesNamespace;
+use Elastic\Elasticsearch\Endpoints\Indices;
 use Exception;
 use Generator;
 use Mockery\MockInterface;
+use Elastic\Elasticsearch\Client;
+use MailerLite\LaravelElasticsearch\Tests\TestCase;
 
 final class AliasSwitchIndexCommandTest extends TestCase
 {
     public function testSwitchIndexMustSucceed(): void
     {
         $this->mock(Client::class, function (MockInterface $mock) {
-            $mock->shouldReceive('indices')
+            $mock->expects('indices')
                 ->times(3)
-                ->andReturn(
-                    $this->mock(IndicesNamespace::class, function (MockInterface $mock) {
-                        $mock->shouldReceive('exists')
-                            ->once()
-                            ->andReturn(true);
+                ->andReturns(
+                    $this->mock(Indices::class, function (MockInterface $mock) {
+                        $mock->expects('exists')
+                            ->andReturns(true);
 
-                        $mock->shouldReceive('putAlias')
-                            ->once()
-                            ->andReturn([]);
+                        $mock->expects('putAlias')
+                            ->andReturns([]);
 
-                        $mock->shouldReceive('deleteAlias')
-                            ->once()
-                            ->andReturn([]);
+                        $mock->expects('deleteAlias')
+                            ->andReturns([]);
                     })
                 );
         });
@@ -51,17 +48,15 @@ final class AliasSwitchIndexCommandTest extends TestCase
     public function testSwitchIndexMustFailBecauseNewIndexDoesntExists(): void
     {
         $this->mock(Client::class, function (MockInterface $mock) {
-            $mock->shouldReceive('indices')
-                ->once()
-                ->andReturn(
-                    $this->mock(IndicesNamespace::class, function (MockInterface $mock) {
-                        $mock->shouldReceive('exists')
-                            ->once()
-                            ->andReturn(false);
+            $mock->expects('indices')
+                ->andReturns(
+                    $this->mock(Indices::class, function (MockInterface $mock) {
+                        $mock->expects('exists')
+                            ->andReturns(false);
 
-                        $mock->shouldNotReceive('putAlias');
+                        $mock->allows('putAlias')->never();
 
-                        $mock->shouldNotReceive('deleteAlias');
+                        $mock->allows('deleteAlias')->never();
                     })
                 );
         });
@@ -82,23 +77,21 @@ final class AliasSwitchIndexCommandTest extends TestCase
     public function testSwitchIndexMustFailDueToPutAliasException(): void
     {
         $this->mock(Client::class, function (MockInterface $mock) {
-            $mock->shouldReceive('indices')
+            $mock->expects('indices')
                 ->times(2)
-                ->andReturn(
-                    $this->mock(IndicesNamespace::class, function (MockInterface $mock) {
-                        $mock->shouldReceive('exists')
-                            ->once()
-                            ->andReturn(true);
+                ->andReturns(
+                    $this->mock(Indices::class, function (MockInterface $mock) {
+                        $mock->expects('exists')
+                            ->andReturns(true);
 
-                        $mock->shouldReceive('putAlias')
-                            ->once()
+                        $mock->expects('putAlias')
                             ->andThrow(
                                 new Exception(
                                     'error adding new index to alias exception'
                                 )
                             );
 
-                        $mock->shouldNotReceive('deleteAlias');
+                        $mock->allows('deleteAlias')->never();
                     })
                 );
         });
@@ -119,26 +112,22 @@ final class AliasSwitchIndexCommandTest extends TestCase
     public function testSwitchIndexMustFailDueToDeleteAliasException(): void
     {
         $this->mock(Client::class, function (MockInterface $mock) {
-            $mock->shouldReceive('indices')
+            $mock->expects('indices')
                 ->times(3)
-                ->andReturn(
-                    $this->mock(IndicesNamespace::class, function (MockInterface $mock) {
-                        $mock->shouldReceive('exists')
-                            ->once()
-                            ->andReturn(true);
+                ->andReturns(
+                    $this->mock(Indices::class, function (MockInterface $mock) {
+                        $mock->expects('exists')
+                            ->andReturns(true);
 
-                        $mock->shouldReceive('putAlias')
-                            ->once()
-                            ->andReturn([]);
+                        $mock->expects('putAlias')
+                            ->andReturns([]);
 
-                        $mock->shouldReceive('deleteAlias')
-                            ->once()
+                        $mock->expects('deleteAlias')
                             ->andThrow(
                                 new Exception(
                                     'error removing old index from alias exception'
                                 )
                             );
-
                     })
                 );
         });
@@ -165,7 +154,8 @@ final class AliasSwitchIndexCommandTest extends TestCase
         $invalidAliasName,
         string $expectedOutputMessage
     ): void {
-        $this->artisan('laravel-elasticsearch:utils:alias-switch-index',
+        $this->artisan(
+            'laravel-elasticsearch:utils:alias-switch-index',
             [
                 'new-index-name' => $invalidNewIndexName,
                 'old-index-name' => $invalidOldIndexName,
@@ -175,111 +165,111 @@ final class AliasSwitchIndexCommandTest extends TestCase
             ->expectsOutput($expectedOutputMessage);
     }
 
-    public function invalidIndexNameDataProvider(): Generator
+    public static function invalidIndexNameDataProvider(): Generator
     {
         yield [
             null,
             'valid_old_index_name',
             'valid_alias_name',
-            'Argument new-index-name must be a non empty string.'
+            'Argument new-index-name must be a non empty string.',
         ];
 
         yield [
             '',
             'valid_old_index_name',
             'valid_alias_name',
-            'Argument new-index-name must be a non empty string.'
+            'Argument new-index-name must be a non empty string.',
         ];
 
         yield [
             true,
             'valid_old_index_name',
             'valid_alias_name',
-            'Argument new-index-name must be a non empty string.'
+            'Argument new-index-name must be a non empty string.',
         ];
 
         yield [
             1,
             'valid_old_index_name',
             'valid_alias_name',
-            'Argument new-index-name must be a non empty string.'
+            'Argument new-index-name must be a non empty string.',
         ];
 
         yield [
             [],
             'valid_old_index_name',
             'valid_alias_name',
-            'Argument new-index-name must be a non empty string.'
+            'Argument new-index-name must be a non empty string.',
         ];
 
         yield [
             'valid_new_index_name',
             null,
             'valid_alias_name',
-            'Argument old-index-name must be a non empty string.'
+            'Argument old-index-name must be a non empty string.',
         ];
 
         yield [
             'valid_new_index_name',
             '',
             'valid_alias_name',
-            'Argument old-index-name must be a non empty string.'
+            'Argument old-index-name must be a non empty string.',
         ];
 
         yield [
             'valid_new_index_name',
             true,
             'valid_alias_name',
-            'Argument old-index-name must be a non empty string.'
+            'Argument old-index-name must be a non empty string.',
         ];
 
         yield [
             'valid_new_index_name',
             1,
             'valid_alias_name',
-            'Argument old-index-name must be a non empty string.'
+            'Argument old-index-name must be a non empty string.',
         ];
 
         yield [
             'valid_new_index_name',
             [],
             'valid_alias_name',
-            'Argument old-index-name must be a non empty string.'
+            'Argument old-index-name must be a non empty string.',
         ];
 
         yield [
             'valid_new_index_name',
             'valid_old_index_name',
             null,
-            'Argument alias-name must be a non empty string.'
+            'Argument alias-name must be a non empty string.',
         ];
 
         yield [
             'valid_new_index_name',
             'valid_old_index_name',
             '',
-            'Argument alias-name must be a non empty string.'
+            'Argument alias-name must be a non empty string.',
         ];
 
         yield [
             'valid_new_index_name',
             'valid_old_index_name',
             true,
-            'Argument alias-name must be a non empty string.'
+            'Argument alias-name must be a non empty string.',
         ];
 
         yield [
             'valid_new_index_name',
             'valid_old_index_name',
             1,
-            'Argument alias-name must be a non empty string.'
+            'Argument alias-name must be a non empty string.',
         ];
 
         yield [
             'valid_new_index_name',
             'valid_old_index_name',
             [],
-            'Argument alias-name must be a non empty string.'
+            'Argument alias-name must be a non empty string.',
         ];
     }
 }

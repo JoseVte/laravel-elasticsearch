@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace MailerLite\LaravelElasticsearch\Console\Command;
 
-use Elasticsearch\Client;
-use Illuminate\Console\Command;
 use Throwable;
+use Illuminate\Console\Command;
+use Elastic\Elasticsearch\Client;
+use Elastic\Elasticsearch\Exception\ClientResponseException;
+use Elastic\Elasticsearch\Exception\ServerResponseException;
+use Elastic\Elasticsearch\Exception\MissingParameterException;
 
 final class AliasCreateCommand extends Command
 {
@@ -30,19 +33,24 @@ final class AliasCreateCommand extends Command
         parent::__construct();
     }
 
+    /**
+     * @throws ClientResponseException
+     * @throws ServerResponseException
+     * @throws MissingParameterException
+     */
     public function handle(): int
     {
         $indexName = $this->argument('index-name');
         $aliasName = $this->argument('alias-name');
 
-        if (!$this->argumentsAreValid(
+        if (! $this->argumentsAreValid(
             $indexName,
             $aliasName
         )) {
             return self::FAILURE;
         }
 
-        if (!$this->client->indices()->exists([
+        if (! $this->client->indices()->exists([
             'index' => $indexName,
         ])) {
             $this->output->writeln(
@@ -58,7 +66,7 @@ final class AliasCreateCommand extends Command
         try {
             $this->client->indices()->putAlias([
                 'index' => $indexName,
-                'name'  => $aliasName,
+                'name' => $aliasName,
             ]);
         } catch (Throwable $exception) {
             $this->output->writeln(
@@ -87,8 +95,8 @@ final class AliasCreateCommand extends Command
     private function argumentsAreValid($indexName, $aliasName): bool
     {
         if ($indexName === null ||
-            !is_string($indexName) ||
-            mb_strlen($indexName) === 0
+            ! is_string($indexName) ||
+            $indexName === ''
         ) {
             $this->output->writeln(
                 '<error>Argument index-name must be a non empty string.</error>'
@@ -98,8 +106,8 @@ final class AliasCreateCommand extends Command
         }
 
         if ($aliasName === null ||
-            !is_string($aliasName) ||
-            mb_strlen($aliasName) === 0
+            ! is_string($aliasName) ||
+            $aliasName === ''
         ) {
             $this->output->writeln(
                 '<error>Argument alias-name must be a non empty string.</error>'

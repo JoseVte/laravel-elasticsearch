@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace MailerLite\LaravelElasticsearch\Console\Command;
 
-use Elasticsearch\Client;
-use Illuminate\Console\Command;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Throwable;
+use Illuminate\Console\Command;
+use Elastic\Elasticsearch\Client;
+use Illuminate\Contracts\Filesystem\Filesystem;
+use Elastic\Elasticsearch\Exception\ClientResponseException;
+use Elastic\Elasticsearch\Exception\ServerResponseException;
+use Elastic\Elasticsearch\Exception\MissingParameterException;
 
 final class IndexCreateOrUpdateMappingCommand extends Command
 {
@@ -38,28 +41,30 @@ final class IndexCreateOrUpdateMappingCommand extends Command
         parent::__construct();
     }
 
+    /**
+     * @throws ServerResponseException
+     * @throws ClientResponseException
+     * @throws MissingParameterException
+     */
     public function handle(): int
     {
         $indexName = $this->argument('index-name');
         $mappingFilePath = $this->argument('mapping-file-path');
 
-        if (!$this->argumentsAreValid(
+        if (! $this->argumentsAreValid(
             $indexName,
             $mappingFilePath
         )) {
             return self::FAILURE;
         }
 
-        if (!$this->client->indices()->exists([
+        if (! $this->client->indices()->exists([
             'index' => $indexName,
         ])) {
             try {
                 $this->client->indices()->create([
                     'index' => $indexName,
-                    'body'  => json_decode(
-                        $this->filesystem->get($mappingFilePath),
-                        true
-                    ),
+                    'body' => json_decode($this->filesystem->get($mappingFilePath), true, 512, JSON_THROW_ON_ERROR),
                 ]);
             } catch (Throwable $exception) {
                 $this->output->writeln(
@@ -88,10 +93,7 @@ final class IndexCreateOrUpdateMappingCommand extends Command
         try {
             $this->client->indices()->putMapping([
                 'index' => $indexName,
-                'body'  => json_decode(
-                    $this->filesystem->get($mappingFilePath),
-                    true
-                ),
+                'body' => json_decode($this->filesystem->get($mappingFilePath), true, 512, JSON_THROW_ON_ERROR),
             ]);
         } catch (Throwable $exception) {
             $this->output->writeln(
@@ -120,8 +122,8 @@ final class IndexCreateOrUpdateMappingCommand extends Command
     private function argumentsAreValid($indexName, $mappingFilePath): bool
     {
         if ($indexName === null ||
-            !is_string($indexName) ||
-            mb_strlen($indexName) === 0
+            ! is_string($indexName) ||
+            $indexName === ''
         ) {
             $this->output->writeln(
                 '<error>Argument index-name must be a non empty string.</error>'
@@ -131,9 +133,9 @@ final class IndexCreateOrUpdateMappingCommand extends Command
         }
 
         if ($mappingFilePath === null ||
-            !is_string($mappingFilePath) ||
-            mb_strlen($mappingFilePath) === 0 ||
-            !$this->filesystem->exists($mappingFilePath)
+            ! is_string($mappingFilePath) ||
+            $mappingFilePath === '' ||
+            ! $this->filesystem->exists($mappingFilePath)
         ) {
             $this->output->writeln(
                 '<error>Argument mapping-file-path must exists on filesystem and must be a non empty string.</error>'

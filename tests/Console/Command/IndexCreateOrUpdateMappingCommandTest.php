@@ -4,40 +4,36 @@ declare(strict_types=1);
 
 namespace MailerLite\LaravelElasticsearch\Tests\Console\Command;
 
-use MailerLite\LaravelElasticsearch\Tests\TestCase;
-use Elasticsearch\Client;
-use Elasticsearch\Namespaces\IndicesNamespace;
 use Exception;
 use Generator;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Mockery\MockInterface;
+use Elastic\Elasticsearch\Client;
+use Elastic\Elasticsearch\Endpoints\Indices;
+use Illuminate\Contracts\Filesystem\Filesystem;
+use MailerLite\LaravelElasticsearch\Tests\TestCase;
 
 final class IndexCreateOrUpdateMappingCommandTest extends TestCase
 {
     public function testCreateOrUpdateMappingMustSucceed(): void
     {
         $this->mock(Filesystem::class, function (MockInterface $mock) {
-            $mock->shouldReceive('exists')
-                ->once()
-                ->andReturn(true);
+            $mock->expects('exists')
+                ->andReturns(true);
 
-            $mock->shouldReceive('get')
-                ->once()
-                ->andReturn('{}');
+            $mock->expects('get')
+                ->andReturns('{}');
         });
 
         $this->mock(Client::class, function (MockInterface $mock) {
-            $mock->shouldReceive('indices')
+            $mock->expects('indices')
                 ->times(2)
-                ->andReturn(
-                    $this->mock(IndicesNamespace::class, function (MockInterface $mock) {
-                        $mock->shouldReceive('exists')
-                            ->once()
-                            ->andReturn(true);
+                ->andReturns(
+                    $this->mock(Indices::class, function (MockInterface $mock) {
+                        $mock->expects('exists')
+                            ->andReturns(true);
 
-                        $mock->shouldReceive('putMapping')
-                            ->once()
-                            ->andReturn([]);
+                        $mock->expects('putMapping')
+                            ->andReturns([]);
                     })
                 );
         });
@@ -55,13 +51,12 @@ final class IndexCreateOrUpdateMappingCommandTest extends TestCase
     public function testCreateOrUpdateMappingMustFailBecauseMappingFileDoesntExistsOnFilesystem(): void
     {
         $this->mock(Filesystem::class, function (MockInterface $mock) {
-            $mock->shouldReceive('exists')
-                ->once()
-                ->andReturn(false);
+            $mock->expects('exists')
+                ->andReturns(false);
         });
 
         $this->mock(Client::class, function (MockInterface $mock) {
-            $mock->shouldNotReceive('indices');
+            $mock->allows('indices')->never();
         });
 
         $this->artisan(
@@ -77,27 +72,23 @@ final class IndexCreateOrUpdateMappingCommandTest extends TestCase
     public function testCreateOrUpdateMappingMustCreateNewIndexIfIndexDoesntExists(): void
     {
         $this->mock(Filesystem::class, function (MockInterface $mock) {
-            $mock->shouldReceive('exists')
-                ->once()
-                ->andReturn(true);
+            $mock->expects('exists')
+                ->andReturns(true);
 
-            $mock->shouldReceive('get')
-                ->once()
-                ->andReturn('{}');
+            $mock->expects('get')
+                ->andReturns('{}');
         });
 
         $this->mock(Client::class, function (MockInterface $mock) {
-            $mock->shouldReceive('indices')
+            $mock->expects('indices')
                 ->times(2)
-                ->andReturn(
-                    $this->mock(IndicesNamespace::class, function (MockInterface $mock) {
-                        $mock->shouldReceive('exists')
-                            ->once()
-                            ->andReturn(false);
+                ->andReturns(
+                    $this->mock(Indices::class, function (MockInterface $mock) {
+                        $mock->expects('exists')
+                            ->andReturns(false);
 
-                        $mock->shouldReceive('create')
-                            ->once()
-                            ->andReturn(true);
+                        $mock->expects('create')
+                            ->andReturns(true);
                     })
                 );
         });
@@ -115,26 +106,22 @@ final class IndexCreateOrUpdateMappingCommandTest extends TestCase
     public function testCreateOrUpdateMappingMustFail(): void
     {
         $this->mock(Filesystem::class, function (MockInterface $mock) {
-            $mock->shouldReceive('exists')
-                ->once()
-                ->andReturn(true);
+            $mock->expects('exists')
+                ->andReturns(true);
 
-            $mock->shouldReceive('get')
-                ->once()
-                ->andReturn('{}');
+            $mock->expects('get')
+                ->andReturns('{}');
         });
 
         $this->mock(Client::class, function (MockInterface $mock) {
-            $mock->shouldReceive('indices')
+            $mock->expects('indices')
                 ->times(2)
-                ->andReturn(
-                    $this->mock(IndicesNamespace::class, function (MockInterface $mock) {
-                        $mock->shouldReceive('exists')
-                            ->once()
-                            ->andReturn(true);
+                ->andReturns(
+                    $this->mock(Indices::class, function (MockInterface $mock) {
+                        $mock->expects('exists')
+                            ->andReturns(true);
 
-                        $mock->shouldReceive('putMapping')
-                            ->once()
+                        $mock->expects('putMapping')
                             ->andThrow(
                                 new Exception('error creating or updating mapping test exception')
                             );
@@ -162,7 +149,8 @@ final class IndexCreateOrUpdateMappingCommandTest extends TestCase
         $invalidAliasName,
         string $expectedOutputMessage
     ): void {
-        $this->artisan('laravel-elasticsearch:utils:index-create-or-update-mapping',
+        $this->artisan(
+            'laravel-elasticsearch:utils:index-create-or-update-mapping',
             [
                 'index-name' => $invalidIndexName,
                 'mapping-file-path' => $invalidAliasName,
@@ -171,66 +159,66 @@ final class IndexCreateOrUpdateMappingCommandTest extends TestCase
             ->expectsOutput($expectedOutputMessage);
     }
 
-    public function invalidIndexNameDataProvider(): Generator
+    public static function invalidIndexNameDataProvider(): Generator
     {
         yield [
             null,
             '/valid/path/mapping.json',
-            'Argument index-name must be a non empty string.'
+            'Argument index-name must be a non empty string.',
         ];
 
         yield [
             '',
             '/valid/path/mapping.json',
-            'Argument index-name must be a non empty string.'
+            'Argument index-name must be a non empty string.',
         ];
 
         yield [
             true,
             '/valid/path/mapping.json',
-            'Argument index-name must be a non empty string.'
+            'Argument index-name must be a non empty string.',
         ];
 
         yield [
             1,
             '/valid/path/mapping.json',
-            'Argument index-name must be a non empty string.'
+            'Argument index-name must be a non empty string.',
         ];
 
         yield [
             [],
             '/valid/path/mapping.json',
-            'Argument index-name must be a non empty string.'
+            'Argument index-name must be a non empty string.',
         ];
 
         yield [
             'valid_index_name',
             null,
-            'Argument mapping-file-path must exists on filesystem and must be a non empty string.'
+            'Argument mapping-file-path must exists on filesystem and must be a non empty string.',
         ];
 
         yield [
             'valid_index_name',
             '',
-            'Argument mapping-file-path must exists on filesystem and must be a non empty string.'
+            'Argument mapping-file-path must exists on filesystem and must be a non empty string.',
         ];
 
         yield [
             'valid_index_name',
             true,
-            'Argument mapping-file-path must exists on filesystem and must be a non empty string.'
+            'Argument mapping-file-path must exists on filesystem and must be a non empty string.',
         ];
 
         yield [
             'valid_index_name',
             1,
-            'Argument mapping-file-path must exists on filesystem and must be a non empty string.'
+            'Argument mapping-file-path must exists on filesystem and must be a non empty string.',
         ];
 
         yield [
             'valid_index_name',
             [],
-            'Argument mapping-file-path must exists on filesystem and must be a non empty string.'
+            'Argument mapping-file-path must exists on filesystem and must be a non empty string.',
         ];
     }
 }

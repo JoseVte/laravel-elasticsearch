@@ -4,29 +4,27 @@ declare(strict_types=1);
 
 namespace MailerLite\LaravelElasticsearch\Tests\Console\Command;
 
-use MailerLite\LaravelElasticsearch\Tests\TestCase;
-use Elasticsearch\Client;
-use Elasticsearch\Namespaces\IndicesNamespace;
 use Exception;
 use Generator;
 use Mockery\MockInterface;
+use Elastic\Elasticsearch\Client;
+use Elastic\Elasticsearch\Endpoints\Indices;
+use MailerLite\LaravelElasticsearch\Tests\TestCase;
 
 final class AliasCreateCommandTest extends TestCase
 {
     public function testAliasCreateMustSucceed(): void
     {
         $this->mock(Client::class, function (MockInterface $mock) {
-            $mock->shouldReceive('indices')
+            $mock->expects('indices')
                 ->times(2)
-                ->andReturn(
-                    $this->mock(IndicesNamespace::class, function (MockInterface $mock) {
-                        $mock->shouldReceive('exists')
-                            ->once()
-                            ->andReturn(true);
+                ->andReturns(
+                    $this->mock(Indices::class, function (MockInterface $mock) {
+                        $mock->expects('exists')
+                            ->andReturns(true);
 
-                        $mock->shouldReceive('putAlias')
-                            ->once()
-                            ->andReturn([]);
+                        $mock->expects('putAlias')
+                            ->andReturns([]);
                     })
                 );
         });
@@ -37,23 +35,21 @@ final class AliasCreateCommandTest extends TestCase
                 'index-name' => 'valid_index_name',
                 'alias-name' => 'valid_alias_name',
             ]
-        )->assertExitCode(0)
-            ->expectsOutput('Alias valid_alias_name created for index valid_index_name.');
+        )->expectsOutput('Alias valid_alias_name created for index valid_index_name.')
+            ->assertExitCode(0);
     }
 
     public function testAliasCreateMustFail(): void
     {
         $this->mock(Client::class, function (MockInterface $mock) {
-            $mock->shouldReceive('indices')
+            $mock->expects('indices')
                 ->times(2)
-                ->andReturn(
-                    $this->mock(IndicesNamespace::class, function (MockInterface $mock) {
-                        $mock->shouldReceive('exists')
-                            ->once()
-                            ->andReturn(true);
+                ->andReturns(
+                    $this->mock(Indices::class, function (MockInterface $mock) {
+                        $mock->expects('exists')
+                            ->andReturns(true);
 
-                        $mock->shouldReceive('putAlias')
-                            ->once()
+                        $mock->expects('putAlias')
                             ->andThrow(
                                 new Exception('error creating alias test exception')
                             );
@@ -74,15 +70,13 @@ final class AliasCreateCommandTest extends TestCase
     public function testAliasCreateMustFailBecauseIndexDoesntExists(): void
     {
         $this->mock(Client::class, function (MockInterface $mock) {
-            $mock->shouldReceive('indices')
-                ->once()
-                ->andReturn(
-                    $this->mock(IndicesNamespace::class, function (MockInterface $mock) {
-                        $mock->shouldReceive('exists')
-                            ->once()
-                            ->andReturn(false);
+            $mock->expects('indices')
+                ->andReturns(
+                    $this->mock(Indices::class, function (MockInterface $mock) {
+                        $mock->expects('exists')
+                            ->andReturns(false);
 
-                        $mock->shouldNotReceive('putAlias');
+                        $mock->allows('putAlias')->never();
                     })
                 );
         });
@@ -105,7 +99,8 @@ final class AliasCreateCommandTest extends TestCase
         $invalidAliasName,
         string $expectedOutputMessage
     ): void {
-        $this->artisan('laravel-elasticsearch:utils:alias-create',
+        $this->artisan(
+            'laravel-elasticsearch:utils:alias-create',
             [
                 'index-name' => $invalidIndexName,
                 'alias-name' => $invalidAliasName,
@@ -114,66 +109,66 @@ final class AliasCreateCommandTest extends TestCase
             ->expectsOutput($expectedOutputMessage);
     }
 
-    public function invalidIndexNameDataProvider(): Generator
+    public static function invalidIndexNameDataProvider(): Generator
     {
         yield [
             null,
             'valid_alias_name',
-            'Argument index-name must be a non empty string.'
+            'Argument index-name must be a non empty string.',
         ];
 
         yield [
             '',
             'valid_alias_name',
-            'Argument index-name must be a non empty string.'
+            'Argument index-name must be a non empty string.',
         ];
 
         yield [
             true,
             'valid_alias_name',
-            'Argument index-name must be a non empty string.'
+            'Argument index-name must be a non empty string.',
         ];
 
         yield [
             1,
             'valid_alias_name',
-            'Argument index-name must be a non empty string.'
+            'Argument index-name must be a non empty string.',
         ];
 
         yield [
             [],
             'valid_alias_name',
-            'Argument index-name must be a non empty string.'
+            'Argument index-name must be a non empty string.',
         ];
 
         yield [
             'valid_index_name',
             null,
-            'Argument alias-name must be a non empty string.'
+            'Argument alias-name must be a non empty string.',
         ];
 
         yield [
             'valid_index_name',
             '',
-            'Argument alias-name must be a non empty string.'
+            'Argument alias-name must be a non empty string.',
         ];
 
         yield [
             'valid_index_name',
             true,
-            'Argument alias-name must be a non empty string.'
+            'Argument alias-name must be a non empty string.',
         ];
 
         yield [
             'valid_index_name',
             1,
-            'Argument alias-name must be a non empty string.'
+            'Argument alias-name must be a non empty string.',
         ];
 
         yield [
             'valid_index_name',
             [],
-            'Argument alias-name must be a non empty string.'
+            'Argument alias-name must be a non empty string.',
         ];
     }
 }

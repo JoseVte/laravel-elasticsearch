@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace MailerLite\LaravelElasticsearch\Console\Command;
 
-use Elasticsearch\Client;
-use Illuminate\Console\Command;
 use Throwable;
+use Illuminate\Console\Command;
+use Elastic\Elasticsearch\Client;
+use Elastic\Elasticsearch\Exception\ClientResponseException;
+use Elastic\Elasticsearch\Exception\ServerResponseException;
+use Elastic\Elasticsearch\Exception\MissingParameterException;
 
 final class IndexCreateCommand extends Command
 {
@@ -29,11 +32,16 @@ final class IndexCreateCommand extends Command
         parent::__construct();
     }
 
+    /**
+     * @throws ServerResponseException
+     * @throws ClientResponseException
+     * @throws MissingParameterException
+     */
     public function handle(): int
     {
         $indexName = $this->argument('index-name');
 
-        if (!$this->argumentIsValid($indexName)) {
+        if (! $this->argumentIsValid($indexName)) {
             return self::FAILURE;
         }
 
@@ -79,8 +87,8 @@ final class IndexCreateCommand extends Command
     private function argumentIsValid($indexName): bool
     {
         if ($indexName === null ||
-            !is_string($indexName) ||
-            mb_strlen($indexName) === 0
+            ! is_string($indexName) ||
+            $indexName === ''
         ) {
             $this->output->writeln(
                 '<error>Argument index-name must be a non empty string.</error>'

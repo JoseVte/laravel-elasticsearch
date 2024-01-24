@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace MailerLite\LaravelElasticsearch\Console\Command;
 
-use Elasticsearch\Client;
-use Illuminate\Console\Command;
 use Throwable;
+use Illuminate\Console\Command;
+use Elastic\Elasticsearch\Client;
+use Elastic\Elasticsearch\Exception\ClientResponseException;
+use Elastic\Elasticsearch\Exception\ServerResponseException;
+use Elastic\Elasticsearch\Exception\MissingParameterException;
 
 final class AliasSwitchIndexCommand extends Command
 {
@@ -31,13 +34,18 @@ final class AliasSwitchIndexCommand extends Command
         parent::__construct();
     }
 
+    /**
+     * @throws ClientResponseException
+     * @throws ServerResponseException
+     * @throws MissingParameterException
+     */
     public function handle(): int
     {
         $newIndexName = $this->argument('new-index-name');
         $oldIndexName = $this->argument('old-index-name');
         $aliasName = $this->argument('alias-name');
 
-        if (!$this->argumentsAreValid(
+        if (! $this->argumentsAreValid(
             $newIndexName,
             $oldIndexName,
             $aliasName
@@ -45,7 +53,7 @@ final class AliasSwitchIndexCommand extends Command
             return self::FAILURE;
         }
 
-        if (!$this->client->indices()->exists([
+        if (! $this->client->indices()->exists([
             'index' => $newIndexName,
         ])) {
             $this->output->writeln(
@@ -61,12 +69,12 @@ final class AliasSwitchIndexCommand extends Command
         try {
             $this->client->indices()->putAlias([
                 'index' => $newIndexName,
-                'name'  => $aliasName,
+                'name' => $aliasName,
             ]);
 
             $this->client->indices()->deleteAlias([
                 'index' => $oldIndexName,
-                'name'  => $aliasName,
+                'name' => $aliasName,
             ]);
         } catch (Throwable $exception) {
             $this->output->writeln(
@@ -97,8 +105,8 @@ final class AliasSwitchIndexCommand extends Command
     private function argumentsAreValid($newIndexName, $oldIndexName, $aliasName): bool
     {
         if ($newIndexName === null ||
-            !is_string($newIndexName) ||
-            mb_strlen($newIndexName) === 0
+            ! is_string($newIndexName) ||
+            $newIndexName === ''
         ) {
             $this->output->writeln(
                 '<error>Argument new-index-name must be a non empty string.</error>'
@@ -108,8 +116,8 @@ final class AliasSwitchIndexCommand extends Command
         }
 
         if ($oldIndexName === null ||
-            !is_string($oldIndexName) ||
-            mb_strlen($oldIndexName) === 0
+            ! is_string($oldIndexName) ||
+            $oldIndexName === ''
         ) {
             $this->output->writeln(
                 '<error>Argument old-index-name must be a non empty string.</error>'
@@ -119,8 +127,8 @@ final class AliasSwitchIndexCommand extends Command
         }
 
         if ($aliasName === null ||
-            !is_string($aliasName) ||
-            mb_strlen($aliasName) === 0
+            ! is_string($aliasName) ||
+            $aliasName === ''
         ) {
             $this->output->writeln(
                 '<error>Argument alias-name must be a non empty string.</error>'
