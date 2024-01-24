@@ -16,7 +16,7 @@
         }
     ],
     "require": {
-        "php": "^7.3|^8.0",
+        "php": "^7.4|^8.0",
         "ext-json": "*",
         "elasticsearch/elasticsearch": "^8.0",
         "guzzlehttp/psr7": "^1.7|^2.0",
@@ -27,7 +27,7 @@
     },
     "require-dev": {
         "dg/bypass-finals": "^1.5",
-        "friendsofphp/php-cs-fixer": "^3.48.0",
+        "friendsofphp/php-cs-fixer": "*",
         "mockery/mockery": "^1.4.3",
         "orchestra/testbench": "^6.5|^7.0|^8.0",
         "phpunit/phpunit": "^9.4|^10.0"
