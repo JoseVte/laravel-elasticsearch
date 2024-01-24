@@ -254,7 +254,6 @@ php artisan laravel-elasticsearch:utils:alias-switch-index <your_NEW_elasticsear
 ```
 
 
-
 ## Bugs, Suggestions, Contributions and Support
 
 Thanks to [everyone](https://github.com/mailerlite/laravel-elasticsearch/graphs/contributors)
