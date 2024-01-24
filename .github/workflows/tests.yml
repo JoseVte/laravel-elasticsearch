@@ -10,7 +10,7 @@ jobs:
    fail-fast: true
    matrix:
     php: [7.4, 8.0, 8.1, 8.2, 8.3]
-    elastic: [8.11.0]
+    elastic: [8.12.0]
     stability: [prefer-stable]
   name: PHP ${{ matrix.php }} - ${{ matrix.stability }}
 
@@ -48,8 +48,6 @@ jobs:
      uses: elastic/elastic-github-actions/elasticsearch@master
      with:
       stack-version: ${{ matrix.elastic }}
-   - name: Check Elasticsearch
-     run: curl -XGET 'localhost:9200'
    - name: Configure matchers for PHPUnit
      uses: mheap/phpunit-matcher-action@v1
    - name: Run PHP tests via PHPUnit
